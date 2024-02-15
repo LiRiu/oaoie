@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {AIOracleCallbackReceiver} from "./AIOracleCallbackReceiver.sol";
 import {IAIOracle} from "./IAIOracle.sol";
 import {IE} from "./IE.sol";
+import "../lib/forge-std/src/console.sol";
 
 contract OAOIE is AIOracleCallbackReceiver, IE {
 

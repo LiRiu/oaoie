@@ -271,7 +271,7 @@ contract IE {
     /// ===================== COMMAND EXECUTION ===================== ///
 
     /// @dev Executes a command from an intent string.
-    function command(string calldata intent) public payable virtual returns(Operation memory) {
+    function command(string calldata intent) public payable virtual returns(Operation memory result) {
         string memory normalized = LibString.toCase(intent, false);
         bytes32 action = _extraction(normalized);
         if (action == "send" || action == "transfer" || action == "give") {
@@ -281,8 +281,7 @@ contract IE {
                 string memory token
             ) = _extractSend(normalized);
             send(to, amount, token);
-            Operation memory result = Operation(action, to, amount, token);
-            return result;
+            result = Operation(action, to, amount, token);
         } else if (action == "swap" || action == "exchange") {
             (
                 string memory amountIn,
@@ -290,8 +289,7 @@ contract IE {
                 string memory tokenOut
             ) = _extractSwap(normalized);
             swap(amountIn, tokenIn, tokenOut);
-            Operation memory result = Operation(action, amountIn, tokenIn, tokenOut);
-            return result;
+            result = Operation(action, amountIn, tokenIn, tokenOut);
         } else {
             revert InvalidSyntax();
         }
@@ -304,15 +302,11 @@ contract IE {
         string memory token
     ) internal virtual {
         address _token = _returnConstant(bytes32(bytes(token)));
-        console.log(to);
         if (_token == address(0)) _token = tokens[token];
         (, address _to, ) = whatIsTheAddressOf(to);
-        console.log(_to);
         if (_token == ETH) {
-            console.log("try send eth");
             payable(_to).transfer(_stringToUint(amount, 18));
         } else {
-            console.log(amount);
             _token.safeTransfer(
                 _to,
                 _stringToUint(amount, _token.readDecimals())
@@ -473,7 +467,6 @@ contract IE {
         (owner, node) = ENS_HELPER.owner(
             string(abi.encodePacked(name, ".eth"))
         );
-        console.log(owner);
         if (IENSHelper(owner) == ENS_WRAPPER)
             owner = ENS_WRAPPER.ownerOf(uint256(node));
         receiver = IENSHelper(ENS_REGISTRY.resolver(node)).addr(node); // Fails on misname.

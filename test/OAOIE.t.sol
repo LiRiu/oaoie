@@ -80,7 +80,7 @@ contract IETest is Test {
       vm.prank(OAO_ADDRESS);
       oaoie.OAOCallback(1, "input", "send liriu 1 ETH");
 
-      lBal = IERC20(USDC).balanceOf(LIRIU_DOT_ETH);
+      lBal = LIRIU_DOT_ETH.balance;
       console.log(lBal);
     }
 }
