@@ -1,2 +1,5 @@
 out
 cache
+.env
+package-lock.json
+broadcast
