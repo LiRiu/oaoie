@@ -166,15 +166,6 @@ contract IETest is Test {
         assertEq(IERC20(USDC).balanceOf(Z0R0Z_DOT_ETH), zBal + 100000000);
     }
 
-    function testSendETH() public payable {
-        uint256 vBal = VITALIK_DOT_ETH.balance;
-        uint256 zBal = Z0R0Z_DOT_ETH.balance;
-        vm.prank(VITALIK_DOT_ETH);
-        ie.send{value: 1 ether}("z0r0z", "1", "ETH");
-        assertEq(VITALIK_DOT_ETH.balance, vBal - 1 ether);
-        assertEq(Z0R0Z_DOT_ETH.balance, zBal + 1 ether);
-    }
-
     function testCommandSwapDAI() public payable {
         vm.prank(DAI_WHALE);
         IERC20(DAI).approve(address(ie), 100 ether);

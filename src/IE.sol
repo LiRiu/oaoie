@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import {LibString} from "../lib/solady/src/utils/LibString.sol";
 import {SafeTransferLib} from "../lib/solady/src/utils/SafeTransferLib.sol";
 import {MetadataReaderLib} from "../lib/solady/src/utils/MetadataReaderLib.sol";
+import "../lib/forge-std/src/console.sol";
 
 /// @title Intents Engine (IE)
 /// @notice Simple helper contract for turning transactional intents into executable code.
@@ -67,6 +68,14 @@ contract IE {
         bytes signature;
     }
 
+    /// @dev Logs the action of command.
+    struct Operation {
+        bytes32 action;
+        string p0;
+        string p1;
+        string p2;
+    }
+
     /// ========================= CONSTANTS ========================= ///
 
     /// @dev The governing DAO address.
@@ -94,7 +103,8 @@ contract IE {
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     /// @dev ENS name normalizer contract.
-    IENSHelper internal constant ENS_HELPER = IENSHelper(0x4A5cae3EC0b144330cf1a6CeAD187D8F6B891758);
+    IENSHelper internal constant ENS_HELPER =
+        IENSHelper(0xEa30C874FFD5d8cFA9fDBC539891bE8eFcFDEDfe);
 
     /// @dev ENS fallback registry contract.
     IENSHelper internal constant ENS_REGISTRY =
@@ -102,10 +112,11 @@ contract IE {
 
     /// @dev ENS name wrapper token contract.
     IENSHelper internal constant ENS_WRAPPER =
-        IENSHelper(0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401);
+        IENSHelper(0x0635513f179D50A207757E05759CbD106d7dFcE8);
 
     /// @dev The address of the Uniswap V3 Factory.
-    address internal constant UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    address internal constant UNISWAP_V3_FACTORY =
+        0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     /// @dev The Uniswap V3 Pool `initcodehash`.
     bytes32 internal constant UNISWAP_V3_POOL_INIT_CODE_HASH =
@@ -134,7 +145,9 @@ contract IE {
     /// @notice Preview natural language smart contract command.
     /// The `send` syntax uses ENS naming: 'send vitalik 20 DAI'.
     /// `swap` syntax uses common command: 'swap 100 DAI for WETH'.
-    function previewCommand(string calldata intent)
+    function previewCommand(
+        string calldata intent
+    )
         public
         view
         virtual
@@ -149,12 +162,22 @@ contract IE {
         string memory normalized = LibString.toCase(intent, false);
         bytes32 action = _extraction(normalized);
         if (action == "send" || action == "transfer" || action == "give") {
-            (string memory _to, string memory _amount, string memory _token) =
-                _extractSend(normalized);
-            (to, amount, token, callData, executeCallData) = previewSend(_to, _amount, _token);
+            (
+                string memory _to,
+                string memory _amount,
+                string memory _token
+            ) = _extractSend(normalized);
+            (to, amount, token, callData, executeCallData) = previewSend(
+                _to,
+                _amount,
+                _token
+            );
         } else if (action == "swap" || action == "exchange") {
-            (string memory amountIn, string memory tokenIn, string memory tokenOut) =
-                _extractSwap(normalized);
+            (
+                string memory amountIn,
+                string memory tokenIn,
+                string memory tokenOut
+            ) = _extractSwap(normalized);
             (amount, token, to) = previewSwap(amountIn, tokenIn, tokenOut);
         } else {
             revert InvalidSyntax();
@@ -162,7 +185,11 @@ contract IE {
     }
 
     /// @dev Previews a send command from the parts of a matched intent string.
-    function previewSend(string memory to, string memory amount, string memory token)
+    function previewSend(
+        string memory to,
+        string memory amount,
+        string memory token
+    )
         public
         view
         virtual
@@ -177,15 +204,21 @@ contract IE {
         _token = _returnConstant(bytes32(bytes(token))); // Check constant.
         if (_token == address(0)) _token = tokens[token]; // Check storage.
         bool isETH = _token == ETH; // Memo whether the token is ETH or not.
-        (, _to,) = whatIsTheAddressOf(to); // Fetch receiver address from ENS.
+        (, _to, ) = whatIsTheAddressOf(to); // Fetch receiver address from ENS.
         _amount = _stringToUint(amount, isETH ? 18 : _token.readDecimals());
         if (!isETH) callData = abi.encodeCall(IToken.transfer, (_to, _amount));
-        executeCallData =
-            abi.encodeCall(IExecutor.execute, (isETH ? _to : _token, isETH ? _amount : 0, callData));
+        executeCallData = abi.encodeCall(
+            IExecutor.execute,
+            (isETH ? _to : _token, isETH ? _amount : 0, callData)
+        );
     }
 
     /// @dev Previews a swap command from the parts of a matched intent string.
-    function previewSwap(string memory amountIn, string memory tokenIn, string memory tokenOut)
+    function previewSwap(
+        string memory amountIn,
+        string memory tokenIn,
+        string memory tokenOut
+    )
         public
         view
         virtual
@@ -195,84 +228,104 @@ contract IE {
         if (_tokenIn == address(0)) _tokenIn = tokens[tokenIn];
         _tokenOut = _returnConstant(bytes32(bytes(tokenOut)));
         if (_tokenOut == address(0)) _tokenOut = tokens[tokenOut];
-        _amountIn = _stringToUint(amountIn, _tokenIn == ETH ? 18 : _tokenIn.readDecimals());
+        _amountIn = _stringToUint(
+            amountIn,
+            _tokenIn == ETH ? 18 : _tokenIn.readDecimals()
+        );
     }
 
     /// @dev Checks ERC4337 userOp against the output of the command intent.
-    function checkUserOp(string calldata intent, UserOperation calldata userOp)
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        (,,,, bytes memory executeCallData) = previewCommand(intent);
+    function checkUserOp(
+        string calldata intent,
+        UserOperation calldata userOp
+    ) public view virtual returns (bool) {
+        (, , , , bytes memory executeCallData) = previewCommand(intent);
         if (executeCallData.length != userOp.callData.length) return false;
         return keccak256(executeCallData) == keccak256(userOp.callData);
     }
 
     /// @dev Checks packed ERC4337 userOp against the output of the command intent.
-    function checkPackedUserOp(string calldata intent, PackedUserOperation calldata userOp)
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        (,,,, bytes memory executeCallData) = previewCommand(intent);
+    function checkPackedUserOp(
+        string calldata intent,
+        PackedUserOperation calldata userOp
+    ) public view virtual returns (bool) {
+        (, , , , bytes memory executeCallData) = previewCommand(intent);
         if (executeCallData.length != userOp.callData.length) return false;
         return keccak256(executeCallData) == keccak256(userOp.callData);
     }
 
     /// @dev Checks and returns the canonical constant for a matched intent string.
-    function _returnConstant(bytes32 token) internal view virtual returns (address _token) {
+    function _returnConstant(
+        bytes32 token
+    ) internal view virtual returns (address _token) {
         if (token == "eth" || token == "ether" || msg.value != 0) return ETH;
         if (token == "usdc") return USDC;
         if (token == "usdt") return USDT;
         if (token == "dai") return DAI;
         if (token == "nani") return NANI;
         if (token == "weth") return WETH;
-        if (token == "wbtc" || token == "btc" || token == "bitcoin") return WBTC;
+        if (token == "wbtc" || token == "btc" || token == "bitcoin")
+            return WBTC;
     }
 
     /// ===================== COMMAND EXECUTION ===================== ///
 
     /// @dev Executes a command from an intent string.
-    function command(string calldata intent) public payable virtual {
+    function command(string calldata intent) public payable virtual returns(Operation memory) {
         string memory normalized = LibString.toCase(intent, false);
         bytes32 action = _extraction(normalized);
         if (action == "send" || action == "transfer" || action == "give") {
-            (string memory to, string memory amount, string memory token) = _extractSend(normalized);
+            (
+                string memory to,
+                string memory amount,
+                string memory token
+            ) = _extractSend(normalized);
             send(to, amount, token);
+            Operation memory result = Operation(action, to, amount, token);
+            return result;
         } else if (action == "swap" || action == "exchange") {
-            (string memory amountIn, string memory tokenIn, string memory tokenOut) =
-                _extractSwap(normalized);
+            (
+                string memory amountIn,
+                string memory tokenIn,
+                string memory tokenOut
+            ) = _extractSwap(normalized);
             swap(amountIn, tokenIn, tokenOut);
+            Operation memory result = Operation(action, amountIn, tokenIn, tokenOut);
+            return result;
         } else {
             revert InvalidSyntax();
         }
     }
 
     /// @dev Executes a send command from the parts of a matched intent string.
-    function send(string memory to, string memory amount, string memory token)
-        public
-        payable
-        virtual
-    {
+    function send(
+        string memory to,
+        string memory amount,
+        string memory token
+    ) internal virtual {
         address _token = _returnConstant(bytes32(bytes(token)));
+        console.log(to);
         if (_token == address(0)) _token = tokens[token];
-        (, address _to,) = whatIsTheAddressOf(to);
+        (, address _to, ) = whatIsTheAddressOf(to);
+        console.log(_to);
         if (_token == ETH) {
-            _to.safeTransferETH(_stringToUint(amount, 18));
+            console.log("try send eth");
+            payable(_to).transfer(_stringToUint(amount, 18));
         } else {
-            _token.safeTransferFrom(msg.sender, _to, _stringToUint(amount, _token.readDecimals()));
+            console.log(amount);
+            _token.safeTransfer(
+                _to,
+                _stringToUint(amount, _token.readDecimals())
+            );
         }
     }
 
     /// @dev Executes a swap command from the parts of a matched intent string.
-    function swap(string memory amountIn, string memory tokenIn, string memory tokenOut)
-        public
-        payable
-        virtual
-    {
+    function swap(
+        string memory amountIn,
+        string memory tokenIn,
+        string memory tokenOut
+    ) internal virtual {
         address _tokenIn = _returnConstant(bytes32(bytes(tokenIn)));
         if (_tokenIn == address(0)) _tokenIn = tokens[tokenIn];
         address _tokenOut = _returnConstant(bytes32(bytes(tokenOut)));
@@ -283,7 +336,10 @@ contract IE {
             WETH.safeTransferETH(msg.value);
         }
         bool zeroForOne = _tokenIn < _tokenOut;
-        uint256 _amountIn = _stringToUint(amountIn, isETH ? 18 : _tokenIn.readDecimals());
+        uint256 _amountIn = _stringToUint(
+            amountIn,
+            isETH ? 18 : _tokenIn.readDecimals()
+        );
         address pool = _computePoolAddress(_tokenIn, _tokenOut);
         ISwapRouter(pool).swap(
             msg.sender,
@@ -295,27 +351,30 @@ contract IE {
     }
 
     /// @dev Callback for IUniswapV3PoolActions#swap. If ETH is source, WETH is forwarded.
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data)
-        public
-        payable
-        virtual
-    {
-        (bool isETH, bool zeroForOne, address tokenIn, address payer) =
-            abi.decode(data, (bool, bool, address, address));
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) public payable virtual {
+        (bool isETH, bool zeroForOne, address tokenIn, address payer) = abi
+            .decode(data, (bool, bool, address, address));
         isETH
-            ? WETH.safeTransfer(msg.sender, uint256(zeroForOne ? amount0Delta : amount1Delta))
+            ? WETH.safeTransfer(
+                msg.sender,
+                uint256(zeroForOne ? amount0Delta : amount1Delta)
+            )
             : tokenIn.safeTransferFrom(
-                payer, msg.sender, uint256(zeroForOne ? amount0Delta : amount1Delta)
+                payer,
+                msg.sender,
+                uint256(zeroForOne ? amount0Delta : amount1Delta)
             );
     }
 
     /// @dev Computes the create2 address for given token pair.
-    function _computePoolAddress(address tokenA, address tokenB)
-        internal
-        view
-        virtual
-        returns (address pool)
-    {
+    function _computePoolAddress(
+        address tokenA,
+        address tokenB
+    ) internal view virtual returns (address pool) {
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
         pool = address(
             uint160(
@@ -336,12 +395,9 @@ contract IE {
     /// ================== BALANCE & SUPPLY HELPERS ================== ///
 
     /// @dev Returns your balance in a named token.
-    function whatIsMyBalanceIn(string calldata token)
-        public
-        view
-        virtual
-        returns (uint256 balance, uint256 balanceAdjusted)
-    {
+    function whatIsMyBalanceIn(
+        string calldata token
+    ) public view virtual returns (uint256 balance, uint256 balanceAdjusted) {
         string memory normalized = LibString.toCase(token, false);
         address _token = _returnConstant(bytes32(bytes(normalized)));
         if (_token == address(0)) _token = tokens[token];
@@ -351,13 +407,11 @@ contract IE {
     }
 
     /// @dev Returns the balance of a named account in a named token.
-    function whatIsTheBalanceOf(string calldata name, /*(bob)*/ /*in*/ string calldata token)
-        public
-        view
-        virtual
-        returns (uint256 balance, uint256 balanceAdjusted)
-    {
-        (, address _name,) = whatIsTheAddressOf(name);
+    function whatIsTheBalanceOf(
+        string calldata name,
+        /*(bob)*/ /*in*/ string calldata token
+    ) public view virtual returns (uint256 balance, uint256 balanceAdjusted) {
+        (, address _name, ) = whatIsTheAddressOf(name);
         string memory normalized = LibString.toCase(token, false);
         address _token = _returnConstant(bytes32(bytes(normalized)));
         if (_token == address(0)) _token = tokens[token];
@@ -367,12 +421,9 @@ contract IE {
     }
 
     /// @dev Returns the total supply of a named token.
-    function whatIsTheTotalSupplyOf(string calldata token)
-        public
-        view
-        virtual
-        returns (uint256 supply, uint256 supplyAdjusted)
-    {
+    function whatIsTheTotalSupplyOf(
+        string calldata token
+    ) public view virtual returns (uint256 supply, uint256 supplyAdjusted) {
         address _token = _returnConstant(bytes32(bytes(token)));
         if (_token == address(0)) _token = tokens[token];
         if (_token == ETH) revert InvalidSyntax();
@@ -381,25 +432,29 @@ contract IE {
     }
 
     /// @dev Returns the amount of ERC20/721 `token` owned by `account`.
-    function _balanceOf(address token, address account)
-        internal
-        view
-        virtual
-        returns (uint256 amount)
-    {
+    function _balanceOf(
+        address token,
+        address account
+    ) internal view virtual returns (uint256 amount) {
         assembly ("memory-safe") {
             mstore(0x00, 0x70a08231000000000000000000000000) // `balanceOf(address)`.
             mstore(0x14, account) // Store the `account` argument.
-            if iszero(staticcall(gas(), token, 0x10, 0x24, 0x20, 0x20)) { revert(codesize(), 0x00) }
+            if iszero(staticcall(gas(), token, 0x10, 0x24, 0x20, 0x20)) {
+                revert(codesize(), 0x00)
+            }
             amount := mload(0x20)
         }
     }
 
     /// @dev Returns the total supply of ERC20/721 `token`.
-    function _totalSupply(address token) internal view virtual returns (uint256 supply) {
+    function _totalSupply(
+        address token
+    ) internal view virtual returns (uint256 supply) {
         assembly ("memory-safe") {
             mstore(0x00, 0x18160ddd) // `totalSupply()`.
-            if iszero(staticcall(gas(), token, 0x1c, 0x04, 0x20, 0x20)) { revert(codesize(), 0x00) }
+            if iszero(staticcall(gas(), token, 0x1c, 0x04, 0x20, 0x20)) {
+                revert(codesize(), 0x00)
+            }
             supply := mload(0x20)
         }
     }
@@ -407,21 +462,30 @@ contract IE {
     /// ====================== ENS VERIFICATION ====================== ///
 
     /// @dev Returns ENS name ownership details.
-    function whatIsTheAddressOf(string memory name)
+    function whatIsTheAddressOf(
+        string memory name
+    )
         public
         view
         virtual
         returns (address owner, address receiver, bytes32 node)
     {
-        (owner, node) = ENS_HELPER.owner(string(abi.encodePacked(name, ".eth")));
-        if (IENSHelper(owner) == ENS_WRAPPER) owner = ENS_WRAPPER.ownerOf(uint256(node));
+        (owner, node) = ENS_HELPER.owner(
+            string(abi.encodePacked(name, ".eth"))
+        );
+        console.log(owner);
+        if (IENSHelper(owner) == ENS_WRAPPER)
+            owner = ENS_WRAPPER.ownerOf(uint256(node));
         receiver = IENSHelper(ENS_REGISTRY.resolver(node)).addr(node); // Fails on misname.
     }
 
     /// ========================= GOVERNANCE ========================= ///
 
     /// @dev Sets a public `name` tag for a given `token` address. Governed by DAO.
-    function setName(address token, string calldata name) public payable virtual {
+    function setName(
+        address token,
+        string calldata name
+    ) public payable virtual {
         if (msg.sender != DAO) revert Unauthorized();
         string memory normalized = LibString.toCase(name, false);
         emit NameSet(tokens[normalized] = token, normalized);
@@ -430,24 +494,29 @@ contract IE {
     /// ================= INTERNAL STRING OPERATIONS ================= ///
 
     /// @dev Extracts the first word (action) as bytes32.
-    function _extraction(string memory normalizedIntent)
-        internal
-        pure
-        virtual
-        returns (bytes32 result)
-    {
+    function _extraction(
+        string memory normalizedIntent
+    ) internal pure virtual returns (bytes32 result) {
         assembly ("memory-safe") {
             let str := add(normalizedIntent, 32)
-            for { let i } lt(i, 32) { i := add(i, 1) } {
+            for {
+                let i
+            } lt(i, 32) {
+                i := add(i, 1)
+            } {
                 let char := byte(0, mload(add(str, i)))
-                if eq(char, 0x20) { break }
+                if eq(char, 0x20) {
+                    break
+                }
                 result := or(result, shl(sub(248, mul(i, 8)), char))
             }
         }
     }
 
     /// @dev Extract the key words of normalized `send` intent.
-    function _extractSend(string memory normalizedIntent)
+    function _extractSend(
+        string memory normalizedIntent
+    )
         internal
         pure
         virtual
@@ -460,11 +529,17 @@ contract IE {
     }
 
     /// @dev Extract the key words of normalized `swap` intent.
-    function _extractSwap(string memory normalizedIntent)
+    function _extractSwap(
+        string memory normalizedIntent
+    )
         internal
         pure
         virtual
-        returns (string memory amountIn, string memory tokenIn, string memory tokenOut)
+        returns (
+            string memory amountIn,
+            string memory tokenIn,
+            string memory tokenOut
+        )
     {
         string[] memory parts = _split(normalizedIntent, " ");
         if (parts.length == 5) return (parts[1], parts[2], parts[4]);
@@ -472,12 +547,10 @@ contract IE {
     }
 
     /// @dev Split the intent into an array of words.
-    function _split(string memory base, bytes1 delimiter)
-        internal
-        pure
-        virtual
-        returns (string[] memory parts)
-    {
+    function _split(
+        string memory base,
+        bytes1 delimiter
+    ) internal pure virtual returns (string[] memory parts) {
         unchecked {
             bytes memory baseBytes = bytes(base);
             uint256 count = 1;
@@ -504,12 +577,10 @@ contract IE {
     }
 
     /// @dev Convert string to decimalized numerical value.
-    function _stringToUint(string memory s, uint8 decimals)
-        internal
-        pure
-        virtual
-        returns (uint256 result)
-    {
+    function _stringToUint(
+        string memory s,
+        uint8 decimals
+    ) internal pure virtual returns (uint256 result) {
         unchecked {
             bool hasDecimal;
             uint256 decimalPlaces;
@@ -543,14 +614,21 @@ interface IToken {
 
 /// @notice Simple calldata executor interface.
 interface IExecutor {
-    function execute(address, uint256, bytes calldata) external payable returns (bytes memory);
+    function execute(
+        address,
+        uint256,
+        bytes calldata
+    ) external payable returns (bytes memory);
 }
 
 /// @dev ENS name resolution helper contracts interface.
 interface IENSHelper {
     function addr(bytes32) external view returns (address);
+
     function ownerOf(uint256) external view returns (address);
+
     function resolver(bytes32) external view returns (address);
+
     function owner(string calldata) external view returns (address, bytes32);
 }
 
