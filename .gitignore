@@ -3,3 +3,4 @@ cache
 .env
 package-lock.json
 broadcast
+node_modules
