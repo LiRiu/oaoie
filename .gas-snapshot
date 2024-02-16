@@ -1,6 +1,0 @@
-IETest:testDeploy() (gas: 2255217)
-IETest:testDeploy() (gas: 2482168)
-IETest:testIENameSetting() (gas: 8107)
-IETest:testOAOCallbackSendETH() (gas: 302917)
-IETest:testOwner() (gas: 27227)
-IETest:testTotalSupply() (gas: 14849)

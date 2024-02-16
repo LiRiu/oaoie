@@ -1,0 +1,21 @@
+{
+  "name": "oaoie",
+  "version": "1.0.0",
+  "description": "The **Intents Engine** (IE): A Basic *Text-to-tx* Simulator Contract.",
+  "main": "scripts/oaoie.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node scripts/oaoie.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "alchemy-sdk": "^3.1.2",
+    "dotenv": "^16.4.4",
+    "web3": "^4.5.0"
+  }
+}
