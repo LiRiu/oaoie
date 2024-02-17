@@ -2,7 +2,7 @@
 
 **Onchain AI Oracle Intents Engine** (OAOIE): A Basic *Text-to-tx* Simulator Contract based on [ie](https://github.com/NaniDAO/ie) and [OAO](https://github.com/hyperoracle/OAO).
 
-## Intents
+## Overview
 
 Users describe the transaction they want in natural language, and OAOIE translates it into specific format and completes the corresponding contract call.
 
@@ -12,7 +12,7 @@ With the help of [opML](https://arxiv.org/pdf/2401.17555.pdf), the entire intent
 2. opML LlaMA2 Intent Solving => `"send liriu 1 ETH"`.
 3. OAOIE Onchain Call => `"address(liriu).transfer(1 ether)"`.
 
-### Send
+### 1) Send
 
 Example intents:
 - **I want to send 1 ETH to vitalik**
@@ -21,7 +21,7 @@ Example intents:
 
 aliases: *transfer*, *give*
 
-### Swap
+### 2) Swap
 
 Example intents:
 - **I want to swap 20 ETH for 10 BTC**
@@ -29,12 +29,16 @@ Example intents:
 
 ## Dev Guide
 
+### Quick Start
+
 ```sh
 git clone https://github.com/LiRiu/oaoie.git
 cd oaoie && npm install
 cp .env.example .env && vim .env # PRIVATE_KEY is required.
 npm run test -- "I want to send liriu 1 eth token"
 ```
+
+### Build
 
 Run: `curl -L https://foundry.paradigm.xyz | bash && source ~/.bashrc && foundryup`
 
