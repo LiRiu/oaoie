@@ -120,7 +120,11 @@ async function calculateAIResult(_prompt, _value) {
 }
 
 async function main() {
-  await calculateAIResult("send liriu 1 ETH", web3.utils.toWei("1", "ether"));
+  const paramsPrompt = process.argv[2];
+  const prompt = `"I want to send ben 10 btc token" → "send ben 10 bitcoin" "I want to swap 20 eth for 10 btc" → "swap 20 eth for 10 btc" "${paramsPrompt}" → ? only reply the answer in 5 words!`
+  
+  console.log("[+] start calculating AI result...");
+  await calculateAIResult(prompt, web3.utils.toWei("1", "ether"));
 }
 
 /// main

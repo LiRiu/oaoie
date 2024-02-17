@@ -14,7 +14,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "alchemy-sdk": "^3.1.2",
     "dotenv": "^16.4.4",
     "web3": "^4.5.0"
   }
