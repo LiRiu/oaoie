@@ -1,8 +1,33 @@
 # [OAOIE](https://github.com/LiRiu/IE)  [![License: AGPL-3.0-only](https://img.shields.io/badge/License-AGPL-black.svg)](https://opensource.org/license/agpl-v3/) [![solidity](https://img.shields.io/badge/solidity-%5E0.8.24-black)](https://docs.soliditylang.org/en/v0.8.24/) [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-000000.svg)](https://getfoundry.sh/) ![tests](https://github.com/z0r0z/zenplate/actions/workflows/ci.yml/badge.svg)
 
-The **Onchain AI Oracle Intents Engine** (OAOIE): A Basic *Text-to-tx* Simulator Contract based on [OAO](https://github.com/hyperoracle/OAO).
+**Onchain AI Oracle Intents Engine** (OAOIE): A Basic *Text-to-tx* Simulator Contract based on [ie](https://github.com/NaniDAO/ie) and [OAO](https://github.com/hyperoracle/OAO).
 
-## Uses
+## Intents
+
+Users describe the transaction they want in natural language, and OAOIE translates it into specific format and completes the corresponding contract call.
+
+With the help of [opML](https://arxiv.org/pdf/2401.17555.pdf), the entire intent will be parsed and executed onchain.
+
+1. User Intent => `"I want to send liriu 1 eth token"`.
+2. opML LlaMA2 Intent Solving => `"send liriu 1 ETH"`.
+3. OAOIE Onchain Call => `"address(liriu).transfer(1 ether)"`.
+
+### Send
+
+Example intents:
+- **I want to send 1 ETH to vitalik**
+- **send vitalik 1 ETH**
+- **send 1 ETH to/for vitalik**
+
+aliases: *transfer*, *give*
+
+### Swap
+
+Example intents:
+- **I want to swap 20 ETH for 10 BTC**
+- **swap 20 ETH for 10 BTC**
+
+## Dev Guide
 
 ```sh
 git clone https://github.com/LiRiu/oaoie.git
@@ -10,40 +35,6 @@ cd oaoie && npm install
 cp .env.example .env && vim .env # PRIVATE_KEY is required.
 npm run test -- "I want to send liriu 1 eth token"
 ```
-
-## Command Syntax (⌘)
-
-Users describe the transaction they want to send in natural language, and OAOIE translates it into a specific command format and completes the corresponding contract invocation. With the help of opML, the entire command is intelligently parsed and executed on-chain.
-
-`"I want to send liriu 1 eth token"`
-
-↓(opML)
-
-`"send liriu 1 ETH"`
-
-↓(OAOIE)
-
-`"address(liriu).transfer(1 ether)"`
-
-### Send
-- *V0*
-
-*Words: 4*
-
-[action] [object] [value] [asset]
-- **send vitalik 1 ETH**
-
-*Words: 5*
-
-[action] [value] [asset] [to/for] [object]
-- **send 1 ETH to/for vitalik**
-
-aliases: *transfer*, *give*
-
-### Swap
-- *V1*
-
-## Build
 
 Run: `curl -L https://foundry.paradigm.xyz | bash && source ~/.bashrc && foundryup`
 
