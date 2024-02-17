@@ -16,9 +16,13 @@ npm run test -- "I want to send liriu 1 eth token"
 Users describe the transaction they want to send in natural language, and OAOIE translates it into a specific command format and completes the corresponding contract invocation. With the help of opML, the entire command is intelligently parsed and executed on-chain.
 
 `"I want to send liriu 1 eth token"`
+
 ↓(opML)
+
 `"send liriu 1 ETH"`
+
 ↓(OAOIE)
+
 `"address(liriu).transfer(1 ether)"`
 
 ### Send
