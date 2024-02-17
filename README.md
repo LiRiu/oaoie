@@ -53,3 +53,8 @@ Build the foundry project with `forge build`. Run tests with `forge test`. Measu
 ## License
 
 See [LICENSE](./LICENSE) for more details.
+
+## Thanks
+
+- [Idea from z0r0zzz](https://twitter.com/z0r0zzz/status/1756126502179983625)
+- [Initial Implementation by NaniDAO](https://github.com/NaniDAO/ie)
