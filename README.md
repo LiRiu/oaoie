@@ -1,6 +1,6 @@
 # [OAOIE](https://github.com/LiRiu/IE)  [![License: AGPL-3.0-only](https://img.shields.io/badge/License-AGPL-black.svg)](https://opensource.org/license/agpl-v3/) [![solidity](https://img.shields.io/badge/solidity-%5E0.8.24-black)](https://docs.soliditylang.org/en/v0.8.24/) [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-000000.svg)](https://getfoundry.sh/) ![tests](https://github.com/z0r0z/zenplate/actions/workflows/ci.yml/badge.svg)
 
-The **Onchain AI OracleA Intents Engine** (IE): A Basic *Text-to-tx* Simulator Contract based on [OAO](https://github.com/hyperoracle/OAO).
+The **Onchain AI Oracle Intents Engine** (OAOIE): A Basic *Text-to-tx* Simulator Contract based on [OAO](https://github.com/hyperoracle/OAO).
 
 ## Uses
 
